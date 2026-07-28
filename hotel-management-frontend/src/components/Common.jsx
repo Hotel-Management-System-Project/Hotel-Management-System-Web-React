@@ -1,0 +1,220 @@
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Snackbar,
+  Alert,
+  Typography,
+} from "@mui/material";
+
+// Page Header
+export function PageHeader({
+  eyebrow,
+  title,
+  subtitle,
+  action,
+}) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: { xs: "flex-start", sm: "center" },
+        flexDirection: { xs: "column", sm: "row" },
+        gap: 2,
+        mb: 3,
+      }}
+    >
+      <Box sx={{ flex: 1 }}>
+        {eyebrow && <div className="eyebrow">{eyebrow}</div>}
+
+        <Typography variant="h4">{title}</Typography>
+
+        {subtitle && (
+          <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+            {subtitle}
+          </Typography>
+        )}
+      </Box>
+
+      {action}
+    </Box>
+  );
+}
+
+// Metric Card
+export function Metric({
+  label,
+  value,
+  icon,
+  color = "#155EEF",
+  helper,
+}) {
+  return (
+    <Card className="metric-card">
+      <CardContent
+        sx={{
+          display: "flex",
+          gap: 2.2,
+          alignItems: "center",
+        }}
+      >
+        <Box
+          sx={{
+            width: 48,
+            height: 48,
+            borderRadius: 3,
+            display: "grid",
+            placeItems: "center",
+            bgcolor: `${color}14`,
+            color,
+          }}
+        >
+          {icon}
+        </Box>
+
+        <Box>
+          <Typography variant="body2" color="text.secondary">
+            {label}
+          </Typography>
+
+          <Typography variant="h5">{value}</Typography>
+
+          {helper && (
+            <Typography variant="caption" color="text.secondary">
+              {helper}
+            </Typography>
+          )}
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Status Chip
+export function Status({ value }) {
+  const v = String(value || "UNKNOWN").toUpperCase();
+
+  const map = {
+    APPROVED: "success",
+    CONFIRMED: "success",
+    BOOKED: "success",
+    COMPLETED: "success",
+    AVAILABLE: "success",
+    ACTIVE: "success",
+    PENDING: "warning",
+    REJECTED: "error",
+    CANCELLED: "error",
+    UNAVAILABLE: "default",
+  };
+
+  return (
+    <Chip
+      size="small"
+      label={v.replace("_", " ")}
+      color={map[v] || "default"}
+      variant={map[v] ? "filled" : "outlined"}
+      sx={{
+        fontWeight: 700,
+        fontSize: 11,
+      }}
+    />
+  );
+}
+
+// Loading
+export function Loading() {
+  return (
+    <Box
+      sx={{
+        display: "grid",
+        placeItems: "center",
+        minHeight: 300,
+      }}
+    >
+      <CircularProgress />
+    </Box>
+  );
+}
+
+// Empty State
+export function Empty({
+  title = "Nothing here yet",
+  subtitle = "New records will appear here.",
+}) {
+  return (
+    <div className="empty">
+      <Typography variant="h6">{title}</Typography>
+      <Typography>{subtitle}</Typography>
+    </div>
+  );
+}
+
+// Confirm Dialog
+export function Confirm({
+  open,
+  title,
+  children,
+  onClose,
+  onConfirm,
+  confirmText = "Confirm",
+  danger = false,
+}) {
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+    >
+      <DialogTitle>{title}</DialogTitle>
+
+      <DialogContent>
+        <Typography color="text.secondary">
+          {children}
+        </Typography>
+      </DialogContent>
+
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+
+        <Button
+          variant="contained"
+          color={danger ? "error" : "primary"}
+          onClick={onConfirm}
+        >
+          {confirmText}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// Snackbar Notification
+export function Notice({ notice, onClose }) {
+  return (
+    <Snackbar
+      open={Boolean(notice)}
+      autoHideDuration={4000}
+      onClose={onClose}
+      anchorOrigin={{
+        vertical: "bottom",
+        horizontal: "right",
+      }}
+    >
+      <Alert
+        severity={notice?.type || "success"}
+        onClose={onClose}
+        variant="filled"
+      >
+        {notice?.message}
+      </Alert>
+    </Snackbar>
+  );
+}
