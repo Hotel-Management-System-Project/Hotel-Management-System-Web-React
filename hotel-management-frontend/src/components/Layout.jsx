@@ -32,7 +32,7 @@ import {
   PeopleRounded,
   SettingsRounded,
 } from '@mui/icons-material';
-import { useAuth } from '../context/AuthContext';
+//import { useAuth } from '../context/AuthContext';
 
 const width = 252;
 
