@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   CancelOutlined,
+  CheckCircleOutlineRounded,
   DeleteOutlineRounded,
   EmailRounded,
   FilterAltOffRounded,
@@ -107,8 +108,7 @@ export default function Bookings() {
   const [notice, setNotice] = useState(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  // Keep records hidden until the user chooses All or a specific status.
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
   const [hotelFilter, setHotelFilter] = useState("ALL");
 
   // Load bookings plus related users, rooms, and hotels needed by the table.
@@ -168,6 +168,8 @@ export default function Bookings() {
     try {
       if (action.type === "delete") {
         await endpoints.deleteBooking(action.row.bookingId);
+      } else if (action.type === "complete") {
+        await endpoints.completeBooking(action.row.bookingId);
       } else {
         await endpoints.cancelBooking(action.row.bookingId);
       }
@@ -176,7 +178,9 @@ export default function Bookings() {
         message:
           action.type === "delete"
             ? `Booking #${action.row.bookingId} deleted successfully.`
-            : `Booking #${action.row.bookingId} cancelled successfully.`,
+            : action.type === "complete"
+              ? `Booking #${action.row.bookingId} completed successfully.`
+              : `Booking #${action.row.bookingId} cancelled successfully.`,
       });
       setAction(null);
       await load();
@@ -208,7 +212,6 @@ export default function Bookings() {
     const value = search.trim().toLowerCase();
 
     return rows.filter((booking) => {
-      if (!statusFilter) return false;
       const customer = usersById[booking.userId];
       const details = bookingDetails[booking.bookingId] || [];
       const bookingStatus = String(booking.status || "BOOKED").toUpperCase();
@@ -368,12 +371,12 @@ export default function Bookings() {
               startIcon={<FilterAltOffRounded />}
               disabled={
                 !search &&
-                statusFilter === "" &&
+                statusFilter === "ALL" &&
                 (!isAdmin || hotelFilter === "ALL")
               }
               onClick={() => {
                 setSearch("");
-                setStatusFilter("");
+                setStatusFilter("ALL");
                 setHotelFilter("ALL");
               }}
               sx={{ whiteSpace: "nowrap" }}
@@ -436,7 +439,7 @@ export default function Bookings() {
                     <TableCell>Total</TableCell>
                     <TableCell>Payment</TableCell>
                     <TableCell>Status</TableCell>
-                    {!isOwner && <TableCell align="right">Actions</TableCell>}
+                    <TableCell align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
 
@@ -716,38 +719,59 @@ export default function Bookings() {
                           <Status value={booking.status || "BOOKED"} />
                         </TableCell>
 
-                        {!isOwner && (
-                          <TableCell align="right">
-                            <Tooltip title="Cancel booking">
+                        <TableCell align="right">
+                          {isOwner && (
+                            <Tooltip title="Complete booking">
                               <span>
                                 <IconButton
-                                  color="warning"
+                                  color="success"
                                   disabled={
-                                    String(booking.status).toUpperCase() ===
-                                    "CANCELLED"
+                                    String(booking.status).toUpperCase() !== "BOOKED" ||
+                                    !booking.checkOutDate ||
+                                    booking.checkOutDate > new Date().toISOString().slice(0, 10)
                                   }
                                   onClick={() =>
-                                    setAction({ type: "cancel", row: booking })
+                                    setAction({ type: "complete", row: booking })
                                   }
                                 >
-                                  <CancelOutlined />
+                                  <CheckCircleOutlineRounded />
                                 </IconButton>
                               </span>
                             </Tooltip>
-                            {isAdmin && (
-                              <Tooltip title="Delete booking">
-                                <IconButton
-                                  color="error"
-                                  onClick={() =>
-                                    setAction({ type: "delete", row: booking })
-                                  }
-                                >
-                                  <DeleteOutlineRounded />
-                                </IconButton>
+                          )}
+                          {!isOwner && (
+                            <>
+                              <Tooltip title="Cancel booking">
+                                <span>
+                                  <IconButton
+                                    color="warning"
+                                    disabled={
+                                      String(booking.status).toUpperCase() ===
+                                      "CANCELLED"
+                                    }
+                                    onClick={() =>
+                                      setAction({ type: "cancel", row: booking })
+                                    }
+                                  >
+                                    <CancelOutlined />
+                                  </IconButton>
+                                </span>
                               </Tooltip>
-                            )}
-                          </TableCell>
-                        )}
+                              {isAdmin && (
+                                <Tooltip title="Delete booking">
+                                  <IconButton
+                                    color="error"
+                                    onClick={() =>
+                                      setAction({ type: "delete", row: booking })
+                                    }
+                                  >
+                                    <DeleteOutlineRounded />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </>
+                          )}
+                        </TableCell>
                       </TableRow>
                     );
                   })}
@@ -791,12 +815,14 @@ export default function Bookings() {
 
       <Confirm
         open={Boolean(action)}
-        title={`${action?.type === "delete" ? "Delete" : "Cancel"} booking?`}
+        title={`${action?.type === "delete" ? "Delete" : action?.type === "complete" ? "Complete" : "Cancel"} booking?`}
         onClose={() => setAction(null)}
         onConfirm={run}
-        danger
+        danger={action?.type !== "complete"}
       >
-        This action cannot be automatically reversed.
+        {action?.type === "complete"
+          ? "Mark this reservation as completed after checkout?"
+          : "This action cannot be automatically reversed."}
       </Confirm>
 
       <Notice notice={notice} onClose={() => setNotice(null)} />

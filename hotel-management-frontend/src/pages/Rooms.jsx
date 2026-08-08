@@ -47,7 +47,7 @@ import {
   containsText,
   isValidHttpUrl,
   paginate,
-  parseImageUrls,
+  parseImageUrls
 } from "../utils/data";
 import {
   Empty,
@@ -85,8 +85,7 @@ export default function Rooms() {
   const [adminHotelId, setAdminHotelId] = useState("");
   const [search, setSearch] = useState("");
   const [roomType, setRoomType] = useState("ALL");
-  // Keep records hidden until the user chooses All or an availability status.
-  const [availability, setAvailability] = useState("");
+  const [availability, setAvailability] = useState("ALL");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [hotelsById, setHotelsById] = useState({});
@@ -304,8 +303,7 @@ export default function Rooms() {
     visible = visible.filter((room) => room.availabilityStatus);
   }
   visible = visible.filter((room) => {
-      if (!availability) return false;
-    const hotel = hotelsById[room.hotelId];
+      const hotel = hotelsById[room.hotelId];
     const matchesSearch = containsText(search, [
       room.roomNumber,
       room.roomType,
@@ -347,7 +345,7 @@ export default function Rooms() {
   const clearFilters = () => {
     setSearch("");
     setRoomType("ALL");
-    setAvailability("");
+    setAvailability("ALL");
     setMinPrice("");
     setMaxPrice("");
   };

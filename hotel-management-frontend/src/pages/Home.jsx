@@ -23,7 +23,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 /*
   Dark-theme code has been removed because this file does not exist:

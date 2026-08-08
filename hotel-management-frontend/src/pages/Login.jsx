@@ -1,211 +1,205 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-
-
+/**
+ * Collects user credentials, calls the shared authentication function, displays
+ * validation/API errors, and redirects a successful login to the dashboard.
+ */
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Alert,
   Box,
   Button,
   Checkbox,
+  Divider,
   FormControlLabel,
   IconButton,
   InputAdornment,
   Paper,
+  Stack,
   TextField,
   Typography,
 } from "@mui/material";
-
 import {
-  Visibility,
-  VisibilityOff,
-  HotelRounded,
-  CheckCircleRounded,
+  ArrowBackRounded,
+  EmailRounded,
+  LockRounded,
+  LoginRounded,
+  VisibilityOffRounded,
+  VisibilityRounded,
 } from "@mui/icons-material";
-
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
+import AuthShowcase from "../components/AuthShowcase";
+import { Notice } from "../components/Common";
 
 export default function Login() {
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
-
-  const [show, setShow] = useState(false);
-  const [error, setError] = useState("");
+  // Form, visibility, loading, and error states change independently.
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
-
+  const [notice, setNotice] = useState(null);
+  const [params] = useSearchParams();
   const { login } = useAuth();
-  const nav = useNavigate();
+  const navigate = useNavigate();
 
-  const submit = async (e) => {
-    e.preventDefault();
+  // Show signup completion and login failures as temporary toast messages.
+  useEffect(() => {
+    const savedSignupMessage = sessionStorage.getItem(
+      "stayflow_signup_success",
+    );
+
+    if (savedSignupMessage || params.get("registered") === "true") {
+      setNotice({
+        type: "success",
+        message:
+          savedSignupMessage ||
+          "Signup successful! Your account was created. You can now sign in.",
+      });
+      sessionStorage.removeItem("stayflow_signup_success");
+    } else if (params.get("reason") === "session-expired") {
+      setNotice({
+        type: "error",
+        message: "Your session is invalid or expired. Please sign in again.",
+      });
+    }
+  }, [params]);
+
+  // Prevent browser submission, authenticate, then enter the private workspace.
+  const submit = async (event) => {
+    event.preventDefault();
+    const email = form.email.trim().toLowerCase();
+
+    if (!email || !form.password) {
+      setNotice({
+        type: "error",
+        message: "Please enter both email address and password.",
+      });
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setNotice({
+        type: "error",
+        message: "Please enter a valid email address.",
+      });
+      return;
+    }
+
     setBusy(true);
-    setError("");
-
+    setNotice(null);
     try {
-      await login(form);
-      nav("/dashboard");
-    } catch (err) {
-      setError(err.message);
+      await login({
+        email,
+        password: form.password,
+      });
+      navigate("/dashboard");
+    } catch (requestError) {
+      const backendMessage = requestError?.message;
+      setNotice({
+        type: "error",
+        message:
+          backendMessage && backendMessage !== "Request failed with status code 500"
+            ? backendMessage
+            : "Incorrect email address or password.",
+      });
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="auth-shell">
-      {/* Left Section */}
-      <section className="auth-hero">
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-          }}
+    <main className="auth-page">
+      <AuthShowcase />
+      <section className="auth-panel">
+        <Button
+          component={Link}
+          to="/"
+          color="inherit"
+          startIcon={<ArrowBackRounded />}
+          className="auth-back"
         >
-          <HotelRounded />
-          <Typography variant="h6">StayFlow</Typography>
-        </Box>
+          Back to home
+        </Button>
 
-        <Box
-          sx={{
-            maxWidth: 570,
-            zIndex: 1,
-          }}
-        >
-          <Typography
-            variant="h2"
-            fontWeight={800}
-            lineHeight={1.08}
-          >
-            Run every stay with confidence.
-          </Typography>
-
-          <Typography
-            sx={{
-              mt: 2.5,
-              opacity: 0.82,
-              fontSize: 18,
-            }}
-          >
-            One polished workspace for properties, rooms,
-            bookings, guests, and approvals.
-          </Typography>
-
-          <Box
-            sx={{
-              mt: 5,
-              display: "grid",
-              gap: 1.5,
-            }}
-          >
-            {[
-              "Real-time property visibility",
-              "Role-based access and secure JWT login",
-              "Responsive on desktop, tablet, and mobile",
-            ].map((item) => (
-              <Box
-                key={item}
-                sx={{
-                  display: "flex",
-                  gap: 1.2,
-                }}
-              >
-                <CheckCircleRounded fontSize="small" />
-                <span>{item}</span>
-              </Box>
-            ))}
+        <Paper className="auth-card" elevation={0}>
+          <Box className="auth-mobile-brand">
+            <Box className="auth-brand-mark">S</Box>
+            <Typography fontWeight={850}>StayFlow</Typography>
           </Box>
-        </Box>
 
-        <Typography
-          variant="caption"
-          sx={{ opacity: 0.65 }}
-        >
-          © 2026 StayFlow. Built for modern hospitality.
-        </Typography>
-      </section>
-
-      {/* Right Section */}
-      <section className="auth-form">
-        <Paper
-          elevation={0}
-          sx={{
-            width: "100%",
-            maxWidth: 440,
-            p: 1,
-            bgcolor: "transparent",
-          }}
-        >
-          <Typography variant="h4">
-            Welcome back
+          <Typography className="auth-kicker">WELCOME BACK</Typography>
+          <Typography variant="h4">Sign in to StayFlow</Typography>
+          <Typography color="text.secondary" sx={{ mt: 1, mb: 3 }}>
+            Access the workspace assigned to your account.
           </Typography>
 
-          <Typography
-            color="text.secondary"
-            sx={{
-              mt: 1,
-              mb: 4,
-            }}
-          >
-            Enter your credentials to access your workspace.
-          </Typography>
-
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
+          {params.get("registered") === "true" && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Signup successful! Your account was created. You can now sign in.
             </Alert>
           )}
-
-          <Box component="form" onSubmit={submit}>
-            <TextField
-              fullWidth
-              required
-              type="email"
-              label="Email address"
-              value={form.email}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  email: e.target.value,
-                })
-              }
-              sx={{ mb: 2 }}
-            />
-
-            <TextField
-              fullWidth
-              required
-              type={show ? "text" : "password"}
-              label="Password"
-              value={form.password}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  password: e.target.value,
-                })
-              }
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShow(!show)}
-                    >
-                      {show ? (
-                        <VisibilityOff />
-                      ) : (
-                        <Visibility />
-                      )}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
+          <Box component="form" onSubmit={submit} noValidate>
+            <Stack spacing={2}>
+              <TextField
+                fullWidth
+                autoFocus
+                type="email"
+                label="Email address"
+                autoComplete="email"
+                value={form.email}
+                onChange={(event) =>
+                  setForm({ ...form, email: event.target.value })
+                }
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <EmailRounded color="action" />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+              <TextField
+                fullWidth
+                type={showPassword ? "text" : "password"}
+                label="Password"
+                autoComplete="current-password"
+                value={form.password}
+                onChange={(event) =>
+                  setForm({ ...form, password: event.target.value })
+                }
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockRounded color="action" />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword((current) => !current)}
+                          edge="end"
+                          aria-label={
+                            showPassword ? "Hide password" : "Show password"
+                          }
+                        >
+                          {showPassword ? (
+                            <VisibilityOffRounded />
+                          ) : (
+                            <VisibilityRounded />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+            </Stack>
 
             <FormControlLabel
               control={<Checkbox defaultChecked />}
-              label="Remember me"
-              sx={{ my: 1.5 }}
+              label="Keep me signed in on this device"
+              sx={{ my: 1.25 }}
             />
 
             <Button
@@ -213,24 +207,37 @@ export default function Login() {
               size="large"
               variant="contained"
               type="submit"
-              disabled={busy}
+              disabled={busy || !form.email || !form.password}
+              startIcon={<LoginRounded />}
+              sx={{ minHeight: 50 }}
             >
-              {busy ? "Signing in..." : "Sign in"}
+              {busy ? "Signing in…" : "Sign in"}
             </Button>
           </Box>
 
-          <Typography
-            textAlign="center"
-            color="text.secondary"
-            sx={{ mt: 3 }}
+          <Divider sx={{ my: 3 }}>NEW PROPERTY OWNER?</Divider>
+          <Button
+            component={Link}
+            to="/signup"
+            fullWidth
+            size="large"
+            variant="outlined"
+            sx={{ minHeight: 48 }}
           >
-            New to StayFlow?{" "}
-            <Link to="/signup">
-              Create an account
-            </Link>
+            Register your property business
+          </Button>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            display="block"
+            textAlign="center"
+            sx={{ mt: 2 }}
+          >
+            Secure authentication powered by StayFlow
           </Typography>
         </Paper>
       </section>
-    </div>
+      <Notice notice={notice} onClose={() => setNotice(null)} />
+    </main>
   );
 }

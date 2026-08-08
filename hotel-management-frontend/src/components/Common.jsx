@@ -1,3 +1,7 @@
+/**
+ * Contains small reusable UI components such as page headings, loading states,
+ * empty states, confirmation dialogs, and status chips used across many pages.
+ */
 import {
   Box,
   Button,
@@ -15,12 +19,8 @@ import {
 } from "@mui/material";
 
 // Page Header
-export function PageHeader({
-  eyebrow,
-  title,
-  subtitle,
-  action,
-}) {
+export function PageHeader({ eyebrow, title, subtitle, action }) {
+  // Centralized heading markup keeps every management page visually consistent.
   return (
     <Box
       sx={{
@@ -49,13 +49,8 @@ export function PageHeader({
 }
 
 // Metric Card
-export function Metric({
-  label,
-  value,
-  icon,
-  color = "#155EEF",
-  helper,
-}) {
+export function Metric({ label, value, icon, color = "#DC2626", helper }) {
+  // The color and icon are configurable so one card supports every statistic.
   return (
     <Card className="metric-card">
       <CardContent
@@ -99,6 +94,7 @@ export function Metric({
 
 // Status Chip
 export function Status({ value }) {
+  // Convert backend status strings into consistent user-facing colors.
   const v = String(value || "UNKNOWN").toUpperCase();
 
   const map = {
@@ -108,6 +104,7 @@ export function Status({ value }) {
     COMPLETED: "success",
     AVAILABLE: "success",
     ACTIVE: "success",
+    DRAFT: "info",
     PENDING: "warning",
     REJECTED: "error",
     CANCELLED: "error",
@@ -130,6 +127,7 @@ export function Status({ value }) {
 
 // Loading
 export function Loading() {
+  // Shared feedback prevents each page from creating a different loading design.
   return (
     <Box
       sx={{
@@ -148,6 +146,7 @@ export function Empty({
   title = "Nothing here yet",
   subtitle = "New records will appear here.",
 }) {
+  // Reusable empty-state text explains why a list or table has no records.
   return (
     <div className="empty">
       <Typography variant="h6">{title}</Typography>
@@ -166,19 +165,13 @@ export function Confirm({
   confirmText = "Confirm",
   danger = false,
 }) {
+  // Destructive actions use the same confirmation pattern throughout the app.
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="xs"
-      fullWidth
-    >
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>{title}</DialogTitle>
 
       <DialogContent>
-        <Typography color="text.secondary">
-          {children}
-        </Typography>
+        <Typography color="text.secondary">{children}</Typography>
       </DialogContent>
 
       <DialogActions>
@@ -198,6 +191,7 @@ export function Confirm({
 
 // Snackbar Notification
 export function Notice({ notice, onClose }) {
+  // A single notice component displays success and error feedback consistently.
   return (
     <Snackbar
       open={Boolean(notice)}
