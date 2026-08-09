@@ -10,6 +10,7 @@ import {
   CheckRounded,
   CloseRounded,
   DeleteOutlineRounded,
+  EditOutlined,
   FilterAltOffRounded,
   ImageNotSupportedRounded,
   SearchRounded,
@@ -121,6 +122,9 @@ export default function Hotels() {
   const [roomForm, setRoomForm] = useState(blankRoom);
   const [roomImageUrls, setRoomImageUrls] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editingHotel, setEditingHotel] = useState(null);
+  const [editForm, setEditForm] = useState(blank);
+  const [editing, setEditing] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [notice, setNotice] = useState(null);
@@ -389,6 +393,55 @@ export default function Hotels() {
   const manage = (hotel) => {
     selectHotel(hotel.hotelId);
     navigate("/rooms");
+  };
+
+  // Keep editing separate from hotel creation so rooms and images are never reset.
+  const openEditHotel = (hotel) => {
+    setEditingHotel(hotel);
+    setEditForm({
+      hotelName: hotel.hotelName || "",
+      description: hotel.description || "",
+      address: hotel.address || "",
+      city: hotel.city || "",
+      state: hotel.state || "",
+      pincode: hotel.pincode || "",
+    });
+  };
+
+  const updateHotel = async () => {
+    if (!editingHotel) return;
+
+    const requiredFields = ["hotelName", "address", "city", "state", "pincode"];
+    if (requiredFields.some((field) => !String(editForm[field] || "").trim())) {
+      setNotice({
+        type: "error",
+        message: "Complete the hotel name and full address before saving.",
+      });
+      return;
+    }
+
+    setEditing(true);
+    try {
+      await endpoints.updateHotel(editingHotel.hotelId, {
+        ...editForm,
+        hotelName: editForm.hotelName.trim(),
+        description: editForm.description.trim(),
+        address: editForm.address.trim(),
+        city: editForm.city.trim(),
+        state: editForm.state.trim(),
+        pincode: editForm.pincode.trim(),
+      });
+      setEditingHotel(null);
+      setNotice({
+        type: "success",
+        message: `${editingHotel.hotelName} was updated successfully.`,
+      });
+      await load();
+    } catch (error) {
+      setNotice({ type: "error", message: error.message });
+    } finally {
+      setEditing(false);
+    }
   };
 
   // Submit a completed draft; the backend rejects hotels that have no rooms.
@@ -722,6 +775,14 @@ export default function Hotels() {
                           >
                             Manage hotel
                           </Button>
+                          <Button
+                            fullWidth
+                            variant="outlined"
+                            startIcon={<EditOutlined />}
+                            onClick={() => openEditHotel(hotel)}
+                          >
+                            Edit hotel
+                          </Button>
                           {["DRAFT", "REJECTED"].includes(
                             String(hotel.status).toUpperCase(),
                           ) && (
@@ -1011,6 +1072,106 @@ export default function Hotels() {
           </Button>
           <Button disabled={saving} variant="contained" onClick={submit}>
             {saving ? "Submitting…" : "Submit hotel"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(editingHotel)}
+        onClose={() => !editing && setEditingHotel(null)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Edit hotel details</DialogTitle>
+        <DialogContent
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            gap: 2,
+            pt: "10px!important",
+          }}
+        >
+          <TextField
+            required
+            label="Hotel name"
+            value={editForm.hotelName}
+            onChange={(event) =>
+              setEditForm({ ...editForm, hotelName: event.target.value })
+            }
+            sx={{ gridColumn: "1/-1" }}
+          />
+          <TextField
+            label="Description"
+            value={editForm.description}
+            onChange={(event) =>
+              setEditForm({ ...editForm, description: event.target.value })
+            }
+            multiline
+            minRows={3}
+            sx={{ gridColumn: "1/-1" }}
+          />
+          <TextField
+            required
+            label="Address"
+            value={editForm.address}
+            onChange={(event) =>
+              setEditForm({ ...editForm, address: event.target.value })
+            }
+            multiline
+            minRows={2}
+            sx={{ gridColumn: "1/-1" }}
+          />
+          <FormControl required fullWidth>
+            <InputLabel>State</InputLabel>
+            <Select
+              label="State"
+              value={editForm.state}
+              onChange={(event) =>
+                setEditForm({
+                  ...editForm,
+                  state: event.target.value,
+                  city: "",
+                })
+              }
+            >
+              {Object.keys(INDIA_LOCATIONS).map((state) => (
+                <MenuItem key={state} value={state}>
+                  {state}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl required fullWidth disabled={!editForm.state}>
+            <InputLabel>City</InputLabel>
+            <Select
+              label="City"
+              value={editForm.city}
+              onChange={(event) =>
+                setEditForm({ ...editForm, city: event.target.value })
+              }
+            >
+              {(INDIA_LOCATIONS[editForm.state] || []).map((city) => (
+                <MenuItem key={city} value={city}>
+                  {city}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField
+            required
+            label="Pincode"
+            value={editForm.pincode}
+            onChange={(event) =>
+              setEditForm({ ...editForm, pincode: event.target.value })
+            }
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button disabled={editing} onClick={() => setEditingHotel(null)}>
+            Cancel
+          </Button>
+          <Button disabled={editing} variant="contained" onClick={updateHotel}>
+            {editing ? "Saving…" : "Save changes"}
           </Button>
         </DialogActions>
       </Dialog>

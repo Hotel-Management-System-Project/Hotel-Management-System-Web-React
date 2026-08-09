@@ -32,6 +32,14 @@ export default function App() {
           }
         />
         <Route
+          path="/admin"
+          element={
+            <PublicOnlyRoute>
+              <Login portal="admin" />
+            </PublicOnlyRoute>
+          }
+        />
+        <Route
           path="/signup"
           element={
             <PublicOnlyRoute>
