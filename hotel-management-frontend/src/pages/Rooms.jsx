@@ -182,7 +182,20 @@ export default function Rooms() {
 
   // Copy a room into the form so the same dialog supports create and edit modes.
   const edit = (room) => {
-    setForm(room || { ...empty, hotelId: activeHotelId || "" });
+    setForm(
+      room
+        ? {
+            ...empty,
+            ...room,
+            // Older API responses did not include these amenity fields. Always
+            // submit real booleans because Spring validates AC and TV as
+            // required values during an update.
+            airConditioned: Boolean(room.airConditioned),
+            hasWifi: room.hasWifi !== false,
+            hasTv: Boolean(room.hasTv),
+          }
+        : { ...empty, hotelId: activeHotelId || "" },
+    );
     setImageUrls(
       room
         ? (imagesByRoom[room.roomId] || [])

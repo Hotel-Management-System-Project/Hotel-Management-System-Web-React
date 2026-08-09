@@ -51,13 +51,23 @@ api.interceptors.response.use(
     // A 401 means the backend rejected the JWT. Clear it even when the local
     // expiry time has not passed because its signature/secret may be stale.
     if (error.response?.status === 401) {
+      let savedRole = "";
+      try {
+        savedRole = JSON.parse(localStorage.getItem("hotel_user"))?.role || "";
+      } catch {
+        // A malformed local value should fall back to the owner login page.
+      }
+      const loginPath = String(savedRole).replace(/^ROLE_/, "") === "ADMIN"
+        ? "/admin"
+        : "/login";
+
       localStorage.removeItem("hotel_token");
       localStorage.removeItem("hotel_user");
       localStorage.removeItem("selected_hotel");
       localStorage.removeItem("hotel_session_version");
 
-      if (!window.location.pathname.includes("/login")) {
-        window.location.assign("/login?reason=session-expired");
+      if (window.location.pathname !== loginPath) {
+        window.location.assign(`${loginPath}?reason=session-expired`);
       }
 
       return Promise.reject(
@@ -121,6 +131,8 @@ export const endpoints = {
   hotel: (id) => api.get(`/api/hotels/${id}`),
 
   addHotel: (data) => api.post("/api/hotels", data),
+
+  updateHotel: (id, data) => api.put(`/api/hotels/${id}`, data),
 
   submitHotel: (id) => api.put(`/api/hotels/${id}/submit`),
 

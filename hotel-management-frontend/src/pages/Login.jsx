@@ -30,7 +30,7 @@ import { useAuth } from "../context/useAuth";
 import AuthShowcase from "../components/AuthShowcase";
 import { Notice } from "../components/Common";
 
-export default function Login() {
+export default function Login({ portal = "owner" }) {
   // Form, visibility, loading, and error states change independently.
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -39,28 +39,40 @@ export default function Login() {
   const [params] = useSearchParams();
   const { login } = useAuth();
   const navigate = useNavigate();
+  const isAdminPortal = portal === "admin";
+  const portalTitle = isAdminPortal
+    ? "Administrator sign in"
+    : "Sign in to StayFlow";
+  const portalDescription = isAdminPortal
+    ? "Access the StayFlow administration portal."
+    : "Access your hotel-owner workspace.";
 
   // Show signup completion and login failures as temporary toast messages.
   useEffect(() => {
     const savedSignupMessage = sessionStorage.getItem(
       "stayflow_signup_success",
     );
+    let nextNotice = null;
 
-    if (savedSignupMessage || params.get("registered") === "true") {
-      setNotice({
+    if (!isAdminPortal && (savedSignupMessage || params.get("registered") === "true")) {
+      nextNotice = {
         type: "success",
         message:
           savedSignupMessage ||
           "Signup successful! Your account was created. You can now sign in.",
-      });
+      };
       sessionStorage.removeItem("stayflow_signup_success");
     } else if (params.get("reason") === "session-expired") {
-      setNotice({
+      nextNotice = {
         type: "error",
         message: "Your session is invalid or expired. Please sign in again.",
-      });
+      };
     }
-  }, [params]);
+
+    if (!nextNotice) return undefined;
+    const timer = window.setTimeout(() => setNotice(nextNotice), 0);
+    return () => window.clearTimeout(timer);
+  }, [isAdminPortal, params]);
 
   // Prevent browser submission, authenticate, then enter the private workspace.
   const submit = async (event) => {
@@ -86,10 +98,13 @@ export default function Login() {
     setBusy(true);
     setNotice(null);
     try {
-      await login({
-        email,
-        password: form.password,
-      });
+      await login(
+        {
+          email,
+          password: form.password,
+        },
+        isAdminPortal ? "ADMIN" : "HOTEL_OWNER",
+      );
       navigate("/dashboard");
     } catch (requestError) {
       const backendMessage = requestError?.message;
@@ -125,10 +140,12 @@ export default function Login() {
             <Typography fontWeight={850}>StayFlow</Typography>
           </Box>
 
-          <Typography className="auth-kicker">WELCOME BACK</Typography>
-          <Typography variant="h4">Sign in to StayFlow</Typography>
+          <Typography className="auth-kicker">
+            {isAdminPortal ? "ADMINISTRATION" : "WELCOME BACK"}
+          </Typography>
+          <Typography variant="h4">{portalTitle}</Typography>
           <Typography color="text.secondary" sx={{ mt: 1, mb: 3 }}>
-            Access the workspace assigned to your account.
+            {portalDescription}
           </Typography>
 
           {params.get("registered") === "true" && (
@@ -215,17 +232,21 @@ export default function Login() {
             </Button>
           </Box>
 
-          <Divider sx={{ my: 3 }}>NEW PROPERTY OWNER?</Divider>
-          <Button
-            component={Link}
-            to="/signup"
-            fullWidth
-            size="large"
-            variant="outlined"
-            sx={{ minHeight: 48 }}
-          >
-            Register your property business
-          </Button>
+          {!isAdminPortal && (
+            <>
+              <Divider sx={{ my: 3 }}>NEW PROPERTY OWNER?</Divider>
+              <Button
+                component={Link}
+                to="/signup"
+                fullWidth
+                size="large"
+                variant="outlined"
+                sx={{ minHeight: 48 }}
+              >
+                Register your property business
+              </Button>
+            </>
+          )}
           <Typography
             variant="caption"
             color="text.secondary"
@@ -233,7 +254,7 @@ export default function Login() {
             textAlign="center"
             sx={{ mt: 2 }}
           >
-            Secure authentication powered by StayFlow
+            {isAdminPortal ? "Administrator access only" : "Hotel-owner access only"}
           </Typography>
         </Paper>
       </section>
