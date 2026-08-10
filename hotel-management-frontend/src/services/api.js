@@ -8,7 +8,8 @@ import axios from "axios";
 export const api = axios.create({
   // VITE_API_URL supports deployment; an empty URL uses Vite's local proxy.
   baseURL: import.meta.env.VITE_API_URL || "",
-  timeout: 15000,
+  // Render's free service can take up to a minute to wake after inactivity.
+  timeout: 70000,
   headers: {
     "Content-Type": "application/json",
   },
